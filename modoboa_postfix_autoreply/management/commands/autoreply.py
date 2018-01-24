@@ -136,6 +136,7 @@ class Command(BaseCommand):
         )
         parser.add_argument("sender")
         parser.add_argument("recipient", nargs="+")
+        parser.add_argument("original_recipient", type=unicode)
 
     def handle(self, *args, **options):
         logger.addHandler(
@@ -145,11 +146,18 @@ class Command(BaseCommand):
             logger.setLevel(logging.DEBUG)
 
         logger.debug(
-            "autoreply sender=%s recipient=%s",
-            options["sender"], ",".join(options["recipient"])
+            "autoreply sender=%s recipient=%s orig=%s",
+            options["sender"], ",".join(options["recipient"]), options["original_recipient"]
         )
 
         sender = options["sender"]
+        original_recipient = options["original_recipient"]
+        recipient = options["recipient"]
+        
+        if ( len(recipient) > 1 or original_recipient not in recipient ):
+            logger.debug(
+                "Skip auto reply, this mail was for an alias list")
+            return
 
         sender_localpart = split_mailbox(sender.lower())[0]
         if (
