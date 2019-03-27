@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """Django signal handlers for modoboa_postfix_autoreply."""
 
 from __future__ import unicode_literals
@@ -7,29 +9,27 @@ from django.db.models import signals
 from django.dispatch import receiver
 from django.utils.translation import ugettext as _
 
-from modoboa.admin import models as admin_models
-from modoboa.admin import signals as admin_signals
+from modoboa.admin import models as admin_models, signals as admin_signals
 from modoboa.core import signals as core_signals
+from modoboa.transport import models as tr_models
 
-from . import forms
-from . import models
-from . import postfix_maps
+from . import forms, models
 
 
 @receiver(signals.post_save, sender=admin_models.Domain)
 def manage_transport_entry(sender, instance, **kwargs):
     """Create or update a transport entry for this domain."""
     if kwargs.get("created"):
-        models.Transport.objects.get_or_create(
-            domain="autoreply.{}".format(instance), method="autoreply:"
+        tr_models.Transport.objects.get_or_create(
+            pattern="autoreply.{}".format(instance), service="autoreply"
         )
         return
     oldname = getattr(instance, "oldname", "None")
     if oldname is None or oldname == instance.name:
         return
-    models.Transport.objects.filter(
-        domain="autoreply.{}".format(oldname)).update(
-            domain="autoreply.{}".format(instance.name))
+    tr_models.Transport.objects.filter(
+        pattern="autoreply.{}".format(oldname)).update(
+            pattern="autoreply.{}".format(instance.name))
     qset = (
         admin_models.AliasRecipient.objects
         .select_related("alias", "r_mailbox")
@@ -45,8 +45,8 @@ def manage_transport_entry(sender, instance, **kwargs):
 @receiver(signals.post_delete, sender=admin_models.Domain)
 def delete_transport_entry(sender, instance, **kwargs):
     """Delete a transport entry."""
-    models.Transport.objects.filter(
-        domain="autoreply.{}".format(instance)).delete()
+    tr_models.Transport.objects.filter(
+        pattern="autoreply.{}".format(instance)).delete()
 
 
 @receiver(signals.post_save, sender=admin_models.Mailbox)
@@ -88,14 +88,6 @@ def manage_autoreply_alias(sender, instance, **kwargs):
             address=ar_alias_address).delete()
 
 
-@receiver(core_signals.register_postfix_maps)
-def register_postfix_maps(sender, **kwargs):
-    """Register postfix maps."""
-    return [
-        postfix_maps.TransportMap,
-    ]
-
-
 @receiver(core_signals.extra_uprefs_routes)
 def extra_routes(sender, **kwargs):
     """Add extra routes."""
@@ -113,7 +105,7 @@ def extra_js(sender, caller, st_type, user, **kwargs):
     return """function autoreply_cb() {
     $('.datefield').datetimepicker({
         format: 'YYYY-MM-DD HH:mm:ss',
-        language: '%(lang)s'
+        locale: '%(lang)s'
     });
 }
 """ % {"lang": user.language}

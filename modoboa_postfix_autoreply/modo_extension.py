@@ -1,4 +1,5 @@
-# coding: utf-8
+# -*- coding: utf-8 -*-
+
 """
 Postfix auto-replies plugin.
 
@@ -7,15 +8,16 @@ functionality into Postfix.
 
 """
 
+from __future__ import unicode_literals
+
 from django.utils.translation import ugettext_lazy
 
 from modoboa.admin import models as admin_models
 from modoboa.core.extensions import ModoExtension, exts_pool
 from modoboa.parameters import tools as param_tools
+from modoboa.transport import models as tr_models
 
-from . import __version__
-from . import forms
-from . import models
+from . import __version__, forms
 
 
 class PostfixAutoreply(ModoExtension):
@@ -34,8 +36,9 @@ class PostfixAutoreply(ModoExtension):
     def load_initial_data(self):
         """Create records for existing domains."""
         for dom in admin_models.Domain.objects.all():
-            trans, created = models.Transport.objects.get_or_create(
-                domain="autoreply.{}".format(dom.name),
-                method="autoreply:")
+            trans, created = tr_models.Transport.objects.get_or_create(
+                pattern="autoreply.{}".format(dom.name),
+                service="autoreply")
+
 
 exts_pool.register_extension(PostfixAutoreply)

@@ -1,22 +1,15 @@
+# -*- coding: utf-8 -*-
+
 """Postfix autoreply models."""
 
+from __future__ import unicode_literals
+
 from django.db import models
+from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible, smart_text
 from django.utils.translation import ugettext_lazy as _
-from django.utils import timezone
 
 from modoboa.admin.models import Mailbox
-
-
-class Transport(models.Model):
-
-    """A custom transport table for autoreply domains."""
-
-    domain = models.CharField(max_length=253, db_index=True)
-    method = models.CharField(max_length=255)
-
-    class Meta:
-        db_table = "postfix_autoreply_transport"
 
 
 @python_2_unicode_compatible
@@ -26,15 +19,15 @@ class ARmessage(models.Model):
 
     mbox = models.ForeignKey(Mailbox, on_delete=models.CASCADE)
     subject = models.CharField(
-        _('subject'), max_length=255,
+        _("subject"), max_length=255,
         help_text=_("The subject that will appear in sent emails")
     )
     content = models.TextField(
-        _('content'),
+        _("content"),
         help_text=_("The content that will appear in sent emails")
     )
     enabled = models.BooleanField(
-        _('enabled'),
+        _("enabled"),
         help_text=_("Activate/Deactivate your auto reply"),
         default=False
     )
